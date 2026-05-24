@@ -9,7 +9,7 @@ spring:
 
 # 这里！server 必须和 spring 平级！
 server:
-  port: ${PORT:8080}
+  port: 8080
 
 # MyBatis 配置
 mybatis:
