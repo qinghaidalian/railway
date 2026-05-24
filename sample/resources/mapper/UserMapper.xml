@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.demo.mapper.UserMapper">
+    
+    <!-- 结果映射配置：数据库列名与Java属性名映射 -->
+    <resultMap id="userResultMap" type="com.example.demo.entity.User">
+        <!-- 主键字段 -->
+        <id property="id" column="id"/>
+        
+        <!-- 普通字段 -->
+        <result property="username" column="username"/>
+        <result property="password" column="password"/>
+        <result property="enabled" column="enabled"/>
+    </resultMap>
+    
+    <!-- 1. 查询所有用户 - 使用结果映射 -->
+    <select id="findAll" resultMap="userResultMap">
+        SELECT * FROM users
+    </select>
+</mapper>
