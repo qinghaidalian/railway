@@ -8,18 +8,16 @@ import com.example.demo.service.UserService;
 
 @Controller
 public class HelloWorld {
-
-	@Autowired
-	private UserService userService;
-
+		
+    @Autowired
+    private UserService userService;
+    
 	@GetMapping("/hello")
 	public String test() {
-		// 返回简单文本给浏览器，同时在控制台打印
 		System.out.println("first start");
 //		System.out.println(userService.getAllUsers());
 		System.out.println("first end");
 		return "index";
-//		return "hello - users: " + userService.getAllUsers();
 	}
 
 }
