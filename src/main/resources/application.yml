@@ -9,7 +9,7 @@ spring:
   datasource:
     url: jdbc:postgresql://dpg-d8aop2gjs32c739cr3bg-a.oregon-postgres.render.com:5432/chen_ueeg?sslmode=require
     username: chen_ueeg_user
-    password: Aj8z4cS7UWBhS238yZVDIv83OYmym8c
+    password: A2j8z4cS7UWBhS238yZVDIv83OYmym8c
     driver-class-name: org.postgresql.Driver
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
