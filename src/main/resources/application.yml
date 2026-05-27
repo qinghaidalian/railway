@@ -1,13 +1,19 @@
 spring:
   application:
     name: demo
+  # datasource:
+  #   url: jdbc:mysql://localhost:3306/qinghai?useSSL=false&serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8&allowPublicKeyRetrieval=true
+  #   username: root
+  #   password: ""
+  #   driver-class-name: com.mysql.cj.jdbc.Driver
   datasource:
-    url: jdbc:mysql://localhost:3306/qinghai?useSSL=false&serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8&allowPublicKeyRetrieval=true
-    username: root
-    password: ""
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:postgresql://dpg-d8aop2gjs32c739cr3bg-a.oregon-postgres.render.com:5432/chen_ueeg?sslmode=require
+    username: chen_ueeg_user
+    password: Aj8z4cS7UWBhS238yZVDIv83OYmym8c
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
 
-# 这里！server 必须和 spring 平级！
 server:
   port: ${PORT:8080}
 
