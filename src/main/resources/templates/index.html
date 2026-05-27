@@ -1,56 +1,233 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spring Boot 首页</title>
+    <title>一览 - Demo</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: "Microsoft YaHei", sans-serif;
+            font-family: "Microsoft YaHei", "Hiragino Sans", sans-serif;
         }
         body {
-            background-color: #f5f7fa;
+            background-color: #f0f2f5;
+            padding: 20px;
+        }
+
+        /* ---- Header ---- */
+        .header {
+            background: linear-gradient(135deg, #2d8cf0, #1a6dd1);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 10px 10px 0 0;
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            min-height: 100vh;
-            flex-direction: column;
-            gap: 20px;
         }
-        .container {
+        .header h1 {
+            font-size: 22px;
+            font-weight: 600;
+        }
+        .header .time {
+            font-size: 14px;
+            opacity: 0.85;
+        }
+
+        /* ---- Toolbar ---- */
+        .toolbar {
             background: white;
-            padding: 40px 60px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            text-align: center;
+            padding: 14px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e8e8e8;
         }
-        h1 {
-            color: #2d8cf0;
-            margin-bottom: 15px;
-        }
-        p {
+        .toolbar .record-count {
+            font-size: 14px;
             color: #666;
+        }
+        .toolbar .record-count span {
+            color: #2d8cf0;
+            font-weight: 700;
+        }
+        .toolbar .actions button {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #2d8cf0;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #1a6dd1;
+        }
+        .btn-outline {
+            background: white;
+            color: #666;
+            border: 1px solid #d9d9d9 !important;
+            margin-left: 10px;
+        }
+        .btn-outline:hover {
+            color: #2d8cf0;
+            border-color: #2d8cf0 !important;
+        }
+
+        /* ---- Table ---- */
+        .table-wrapper {
+            background: white;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1200px;
+        }
+        thead th {
+            background: #fafafa;
+            color: #333;
+            font-weight: 600;
+            font-size: 13px;
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 2px solid #e8e8e8;
+            white-space: nowrap;
+        }
+        tbody td {
+            padding: 12px 16px;
+            font-size: 13px;
+            color: #555;
+            border-bottom: 1px solid #f0f0f0;
+            white-space: nowrap;
+        }
+        tbody tr:hover {
+            background-color: #e6f7ff;
+        }
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* ---- Status Badge ---- */
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-done {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+        .badge-progress {
+            background: #e6f7ff;
+            color: #1890ff;
+            border: 1px solid #91d5ff;
+        }
+        .badge-pending {
+            background: #fff7e6;
+            color: #fa8c16;
+            border: 1px solid #ffd591;
+        }
+
+        /* ---- Amount ---- */
+        .amount {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ---- Empty State ---- */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #bbb;
             font-size: 16px;
         }
-        .info {
-            color: #999;
-            margin-top: 10px;
+
+        /* ---- Footer ---- */
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #bbb;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🚀 Spring Boot 项目启动成功</h1>
-        <p>欢迎访问 qinghai 应用首页</p>
-        <div class="info">当前时间：<span id="time"></span></div>
+
+    <div class="header">
+        <h1>📋 一览 - Demo Items</h1>
+        <div class="time" id="currentTime"></div>
     </div>
 
+    <div class="toolbar">
+        <div class="record-count">
+            共 <span th:text="${#lists.size(items)}">0</span> 件记录
+        </div>
+        <div class="actions">
+            <button class="btn-primary" onclick="location.reload()">🔄 刷新</button>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table th:if="${items != null and !items.isEmpty()}">
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>订单号</th>
+                    <th>客户名</th>
+                    <th>商品名</th>
+                    <th>数量</th>
+                    <th>单价 (¥)</th>
+                    <th>总金额 (¥)</th>
+                    <th>订单日期</th>
+                    <th>状态</th>
+                    <th>备注</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="item, stat : ${items}">
+                    <td th:text="${stat.count}"></td>
+                    <td th:text="${item.orderNo}"></td>
+                    <td th:text="${item.customerName}"></td>
+                    <td th:text="${item.productName}"></td>
+                    <td th:text="${item.quantity}"></td>
+                    <td class="amount" th:text="${#numbers.formatDecimal(item.unitPrice, 1, 2)}"></td>
+                    <td class="amount" th:text="${#numbers.formatDecimal(item.totalAmount, 1, 2)}"></td>
+                    <td th:text="${item.orderDate}"></td>
+                    <td>
+                        <span class="badge badge-done"
+                              th:if="${item.status == '已完成'}"
+                              th:text="${item.status}"></span>
+                        <span class="badge badge-progress"
+                              th:if="${item.status == '处理中'}"
+                              th:text="${item.status}"></span>
+                        <span class="badge badge-pending"
+                              th:if="${item.status == '待处理'}"
+                              th:text="${item.status}"></span>
+                    </td>
+                    <td th:text="${item.remarks != null ? item.remarks : '-'}"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="empty-state" th:if="${items == null or items.isEmpty()}">
+            暂无数据
+        </div>
+    </div>
+
+    <div class="footer">Demo Application &copy; 2026</div>
+
     <script>
-        // 显示当前时间
-        document.getElementById("time").innerText = new Date().toLocaleString();
+        document.getElementById("currentTime").innerText = new Date().toLocaleString();
     </script>
 </body>
 </html>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.demo.mapper.DemoItemMapper">
+
+    <resultMap id="demoItemResultMap" type="com.example.demo.entity.DemoItem">
+        <id property="id" column="id"/>
+        <result property="orderNo" column="order_no"/>
+        <result property="customerName" column="customer_name"/>
+        <result property="productName" column="product_name"/>
+        <result property="quantity" column="quantity"/>
+        <result property="unitPrice" column="unit_price"/>
+        <result property="totalAmount" column="total_amount"/>
+        <result property="orderDate" column="order_date"/>
+        <result property="status" column="status"/>
+        <result property="remarks" column="remarks"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="demoItemResultMap">
+        SELECT id, order_no, customer_name, product_name, quantity,
+               unit_price, total_amount, order_date, status, remarks,
+               created_at, updated_at
+          FROM demo_items
+         ORDER BY id
+    </select>
+
+</mapper>

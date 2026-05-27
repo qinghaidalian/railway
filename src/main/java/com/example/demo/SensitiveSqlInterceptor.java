@@ -8,13 +8,16 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.sql.Connection;
 import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.ParameterMapping;
 import org.apache.ibatis.plugin.Interceptor;
+import org.apache.ibatis.plugin.Intercepts;
 import org.apache.ibatis.plugin.Invocation;
 import org.apache.ibatis.plugin.Plugin;
+import org.apache.ibatis.plugin.Signature;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
 import com.example.demo.annotation.SensitiveSql;
@@ -23,17 +26,31 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
+@Intercepts({
+    @Signature(type = StatementHandler.class, method = "prepare", args = {Connection.class, Integer.class})
+})
 public class SensitiveSqlInterceptor implements Interceptor {
 
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
         StatementHandler statementHandler = (StatementHandler) invocation.getTarget();
-        MappedStatement mappedStatement =null;
-        // 获取 MappedStatement
-//        MappedStatement mappedStatement =
-//            (MappedStatement) ReflectionUtils.getFieldValue(
-//                statementHandler, "delegate.mappedStatement"
-//            );
+
+        // 通过反射获取 MappedStatement
+        MappedStatement mappedStatement = null;
+        try {
+            Field delegateField = statementHandler.getClass().getDeclaredField("delegate");
+            delegateField.setAccessible(true);
+            Object delegate = delegateField.get(statementHandler);
+            Field msField = delegate.getClass().getDeclaredField("mappedStatement");
+            msField.setAccessible(true);
+            mappedStatement = (MappedStatement) msField.get(delegate);
+        } catch (Exception ignored) {
+            // 反射失败则跳过拦截
+        }
+
+        if (mappedStatement == null) {
+            return invocation.proceed();
+        }
 
         // 检查是否包含敏感注解
         SensitiveSql sensitiveSql = getSensitiveSqlAnnotation(mappedStatement);
