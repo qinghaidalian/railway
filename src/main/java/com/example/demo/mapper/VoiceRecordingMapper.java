@@ -9,4 +9,5 @@ public interface VoiceRecordingMapper {
     int insert(VoiceRecording recording);
     List<VoiceRecording> findAllWithoutAudio();
     VoiceRecording findById(Long id);
+    int deleteById(Long id);
 }

@@ -35,4 +35,8 @@
          WHERE id = #{id}
     </select>
 
+    <delete id="deleteById">
+        DELETE FROM voice_recordings WHERE id = #{id}
+    </delete>
+
 </mapper>

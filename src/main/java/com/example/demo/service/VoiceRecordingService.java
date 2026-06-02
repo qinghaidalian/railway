@@ -28,4 +28,8 @@ public class VoiceRecordingService {
     public VoiceRecording getRecordingAudio(Long id) {
         return voiceRecordingMapper.findById(id);
     }
+
+    public boolean deleteRecording(Long id) {
+        return voiceRecordingMapper.deleteById(id) > 0;
+    }
 }

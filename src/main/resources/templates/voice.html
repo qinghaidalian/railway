@@ -283,6 +283,31 @@
             background: #07c160;
         }
 
+        /* ---- Delete Button ---- */
+        .delete-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            opacity: 0.4;
+        }
+        .delete-btn:hover {
+            background: #fff0f0;
+            opacity: 1;
+        }
+        .delete-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: #e74c3c;
+        }
+
         /* ---- Empty State ---- */
         .empty-state {
             text-align: center;
@@ -620,6 +645,12 @@
                                     <div class="recording-date">${dateStr}</div>
                                     <div class="recording-duration">⏱ ${durStr}</div>
                                 </div>
+                                <button class="delete-btn" data-id="${item.id}"
+                                        onclick="deleteRecording(event, ${item.id})" title="删除">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                    </svg>
+                                </button>
                             </div>
                         `;
                     }).join('');
@@ -687,6 +718,26 @@
                     item.querySelectorAll('.recording-wave .dot').forEach(d => d.classList.remove('active'));
                 }
             }
+
+            // ---- Delete Recording ----
+            window.deleteRecording = async function(e, id) {
+                e.stopPropagation();
+                if (!confirm('确定要删除这条录音吗？')) return;
+
+                try {
+                    const resp = await fetch('/api/voice/' + id, { method: 'DELETE' });
+                    const result = await resp.json();
+                    if (result.success) {
+                        showToast('✓ 已删除');
+                        loadRecordings();
+                    } else {
+                        showToast('删除失败: ' + (result.error || '未知错误'));
+                    }
+                } catch (err) {
+                    console.error('删除失败:', err);
+                    showToast('删除失败，请检查网络');
+                }
+            };
 
             // ---- Event Listeners ----
             // Mouse / Touch: press and hold

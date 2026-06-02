@@ -11,6 +11,8 @@ spring:
     username: chen_ueeg_user
     password: A2j8z4cS7UWBhS238yZVDIv83OYmym8c
     driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-init-sql: SET timezone = 'Asia/Shanghai'
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 

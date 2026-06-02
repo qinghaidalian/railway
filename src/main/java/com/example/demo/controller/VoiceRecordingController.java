@@ -75,4 +75,16 @@ public class VoiceRecordingController {
         headers.setContentLength(recording.getAudioData().length);
         return new ResponseEntity<>(recording.getAudioData(), headers, HttpStatus.OK);
     }
+
+    @DeleteMapping("/api/voice/{id}")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> deleteRecording(@PathVariable Long id) {
+        boolean deleted = voiceRecordingService.deleteRecording(id);
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", deleted);
+        if (!deleted) {
+            result.put("error", "录音不存在或已删除");
+        }
+        return ResponseEntity.ok(result);
+    }
 }
