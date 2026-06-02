@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.demo.mapper.VoiceRecordingMapper">
+
+    <resultMap id="voiceRecordingResultMap" type="com.example.demo.entity.VoiceRecording">
+        <id property="id" column="id"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="audioData" column="audio_data"/>
+        <result property="duration" column="duration"/>
+    </resultMap>
+
+    <resultMap id="voiceRecordingNoAudioResultMap" type="com.example.demo.entity.VoiceRecording">
+        <id property="id" column="id"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="duration" column="duration"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.example.demo.entity.VoiceRecording"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO voice_recordings (audio_data, duration, created_at)
+        VALUES (#{audioData, jdbcType=BINARY}, #{duration}, NOW())
+    </insert>
+
+    <select id="findAllWithoutAudio" resultMap="voiceRecordingNoAudioResultMap">
+        SELECT id, created_at, duration
+          FROM voice_recordings
+         ORDER BY created_at DESC
+    </select>
+
+    <select id="findById" resultMap="voiceRecordingResultMap">
+        SELECT id, created_at, audio_data, duration
+          FROM voice_recordings
+         WHERE id = #{id}
+    </select>
+
+</mapper>

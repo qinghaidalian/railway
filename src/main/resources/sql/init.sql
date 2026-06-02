@@ -32,3 +32,17 @@ VALUES
     ('ORD-2026-0008', '中村さくら', 'ノートPCスタンド', 3,  3980.00,   11940.00, '2026-05-16', '待处理', NULL),
     ('ORD-2026-0009', '小林翔',     'Bluetoothスピーカー', 2, 7500.00, 15000.00, '2026-05-18', '处理中', '配送先確認'),
     ('ORD-2026-0010', '加藤あかり', 'モバイルバッテリー', 10, 2480.00, 24800.00, '2026-05-20', '已完成', '大量注文');
+
+-- ============================================
+-- 3. 语音录制表
+-- ============================================
+CREATE TABLE IF NOT EXISTS voice_recordings (
+    id              BIGSERIAL       PRIMARY KEY,
+    created_at      TIMESTAMP       NOT NULL DEFAULT NOW(),
+    audio_data      BYTEA           NOT NULL,
+    duration        INTEGER
+);
+COMMENT ON TABLE voice_recordings IS '语音录制记录';
+COMMENT ON COLUMN voice_recordings.created_at IS '录制日期（系统时间）';
+COMMENT ON COLUMN voice_recordings.audio_data IS '语音内容（二进制音频数据）';
+COMMENT ON COLUMN voice_recordings.duration IS '语音时长（秒）';
