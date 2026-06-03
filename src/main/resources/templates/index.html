@@ -230,9 +230,26 @@
     </div>
 
     <div class="pagination">
-      <label for="pageSizeSelect" style="display:flex;align-items:center;gap:8px;font-size:14px;color:#333;">
+      <label
+        for="pageSizeSelect"
+        style="
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 14px;
+          color: #333;
+        "
+      >
         每页显示
-        <select id="pageSizeSelect" style="padding:8px 10px;border-radius:8px;border:1px solid #d9d9d9;font-size:14px;">
+        <select
+          id="pageSizeSelect"
+          style="
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid #d9d9d9;
+            font-size: 14px;
+          "
+        >
           <option value="5">5</option>
           <option value="15">15</option>
           <option value="30">30</option>
@@ -330,11 +347,13 @@
         loadPage(currentPage);
       }
 
-      document.getElementById("pageSizeSelect").addEventListener("change", (event) => {
-        pageSize = Number(event.target.value) || 15;
-        currentPage = 1;
-        loadPage(currentPage);
-      });
+      document
+        .getElementById("pageSizeSelect")
+        .addEventListener("change", (event) => {
+          pageSize = Number(event.target.value) || 15;
+          currentPage = 1;
+          loadPage(currentPage);
+        });
 
       document.getElementById("prevPage").addEventListener("click", () => {
         if (currentPage > 1) {

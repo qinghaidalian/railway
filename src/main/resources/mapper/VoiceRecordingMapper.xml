@@ -29,6 +29,17 @@
          ORDER BY created_at DESC
     </select>
 
+    <select id="findByPage" resultMap="voiceRecordingNoAudioResultMap">
+        SELECT id, created_at, duration
+          FROM voice_recordings
+         ORDER BY created_at DESC
+         LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*) FROM voice_recordings
+    </select>
+
     <select id="findById" resultMap="voiceRecordingResultMap">
         SELECT id, created_at, audio_data, duration
           FROM voice_recordings

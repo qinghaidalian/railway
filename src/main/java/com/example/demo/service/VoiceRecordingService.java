@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.example.demo.dto.PageResult;
 import com.example.demo.entity.VoiceRecording;
 import com.example.demo.mapper.VoiceRecordingMapper;
 import java.util.List;
@@ -23,6 +24,19 @@ public class VoiceRecordingService {
 
     public List<VoiceRecording> getAllRecordings() {
         return voiceRecordingMapper.findAllWithoutAudio();
+    }
+
+    public PageResult<VoiceRecording> getRecordingsPage(int page, int size) {
+        if (page < 1) {
+            page = 1;
+        }
+        if (size < 1) {
+            size = 5;
+        }
+        int offset = (page - 1) * size;
+        List<VoiceRecording> items = voiceRecordingMapper.findByPage(offset, size);
+        long total = voiceRecordingMapper.countAll();
+        return new PageResult<>(items, total, page, size);
     }
 
     public VoiceRecording getRecordingAudio(Long id) {

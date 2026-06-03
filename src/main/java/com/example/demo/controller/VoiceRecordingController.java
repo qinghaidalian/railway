@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import com.example.demo.dto.PageResult;
 import com.example.demo.entity.VoiceRecording;
 import com.example.demo.service.VoiceRecordingService;
 
@@ -52,15 +53,24 @@ public class VoiceRecordingController {
 
     @GetMapping("/api/voice/list")
     @ResponseBody
-    public List<Map<String, Object>> listRecordings() {
-        List<VoiceRecording> recordings = voiceRecordingService.getAllRecordings();
-        return recordings.stream().map(r -> {
+    public PageResult<Map<String, Object>> listRecordings(
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "size", defaultValue = "5") int size) {
+        PageResult<VoiceRecording> pageResult = voiceRecordingService.getRecordingsPage(page, size);
+        List<Map<String, Object>> items = pageResult.getItems().stream().map(r -> {
             Map<String, Object> item = new HashMap<>();
             item.put("id", r.getId());
             item.put("createdAt", r.getCreatedAt().toString());
             item.put("duration", r.getDuration());
             return item;
         }).toList();
+
+        PageResult<Map<String, Object>> result = new PageResult<>();
+        result.setItems(items);
+        result.setTotal(pageResult.getTotal());
+        result.setPage(pageResult.getPage());
+        result.setSize(pageResult.getSize());
+        return result;
     }
 
     @GetMapping("/api/voice/audio/{id}")

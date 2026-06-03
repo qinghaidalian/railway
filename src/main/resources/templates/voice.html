@@ -235,6 +235,35 @@
         background: #fafafa;
       }
 
+      .pagination {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin: 10px 0 18px;
+      }
+      .pagination .page-info {
+        color: #666;
+        font-size: 14px;
+      }
+      .pagination select,
+      .pagination button {
+        padding: 8px 12px;
+        border: 1px solid #d9d9d9;
+        border-radius: 8px;
+        background: white;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      .pagination select {
+        min-width: 88px;
+      }
+      .pagination button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
       .play-btn {
         width: 42px;
         height: 42px;
@@ -445,6 +474,26 @@
         >
       </div>
 
+      <div class="pagination">
+        <label for="pageSizeSelect">
+          每页显示
+          <select id="pageSizeSelect">
+            <option value="5">5</option>
+            <option value="15">15</option>
+            <option value="20">20</option>
+            <option value="100">100</option>
+          </select>
+        </label>
+        <div class="page-info">
+          第 <strong id="currentPage">1</strong> 页 / 共
+          <strong id="totalPages">1</strong> 页
+        </div>
+        <div>
+          <button id="prevPage" type="button">上一页</button>
+          <button id="nextPage" type="button">下一页</button>
+        </div>
+      </div>
+
       <div id="recordingsList">
         <div class="empty-state" id="emptyState">
           <svg viewBox="0 0 24 24">
@@ -480,6 +529,11 @@
         const recordCount = document.getElementById("recordCount");
         const toast = document.getElementById("toast");
         const audioPlayer = document.getElementById("audioPlayer");
+        const pageSizeSelect = document.getElementById("pageSizeSelect");
+        const prevPageBtn = document.getElementById("prevPage");
+        const nextPageBtn = document.getElementById("nextPage");
+        const currentPageEl = document.getElementById("currentPage");
+        const totalPagesEl = document.getElementById("totalPages");
 
         // ---- State ----
         let mediaRecorder = null;
@@ -488,6 +542,9 @@
         let timerInterval = null;
         let isRecording = false;
         let currentPlayingBtn = null;
+        let currentPage = 1;
+        let pageSize = 5;
+        let totalPages = 1;
 
         // ---- Toast Helper ----
         let toastTimer = null;
@@ -616,7 +673,7 @@
             const result = await resp.json();
             if (result.success) {
               showToast("✓ 语音已保存");
-              loadRecordings();
+              loadRecordings(currentPage, pageSize);
             } else {
               showToast("保存失败: " + (result.error || "未知错误"));
             }
@@ -626,15 +683,36 @@
           }
         }
 
-        // ---- Load Recordings ----
-        async function loadRecordings() {
+        function updatePaginationControls() {
+          currentPageEl.textContent = currentPage;
+          totalPagesEl.textContent = totalPages;
+          prevPageBtn.disabled = currentPage <= 1;
+          nextPageBtn.disabled = currentPage >= totalPages;
+          pageSizeSelect.value = String(pageSize);
+        }
+
+        async function loadRecordings(page = currentPage, size = pageSize) {
+          currentPage = page < 1 ? 1 : page;
+          pageSize = size < 1 ? 5 : size;
+
           try {
-            const resp = await fetch("/api/voice/list");
+            const resp = await fetch(
+              `/api/voice/list?page=${currentPage}&size=${pageSize}`,
+            );
             const data = await resp.json();
+            const items = data.items || [];
+            const total = Number(data.total || 0);
+            totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-            recordCount.textContent = data.length + " 条";
+            if (total > 0 && currentPage > totalPages) {
+              currentPage = totalPages;
+              return loadRecordings(currentPage, pageSize);
+            }
 
-            if (data.length === 0) {
+            recordCount.textContent = total + " 条";
+            updatePaginationControls();
+
+            if (items.length === 0) {
               recordingsList.innerHTML = "";
               recordingsList.appendChild(emptyState);
               emptyState.style.display = "";
@@ -642,7 +720,7 @@
             }
 
             emptyState.style.display = "none";
-            recordingsList.innerHTML = data
+            recordingsList.innerHTML = items
               .map((item, idx) => {
                 const date = new Date(item.createdAt);
                 const dateStr = date.toLocaleString("zh-CN", {
@@ -766,7 +844,7 @@
             const result = await resp.json();
             if (result.success) {
               showToast("✓ 已删除");
-              loadRecordings();
+              loadRecordings(currentPage, pageSize);
             } else {
               showToast("删除失败: " + (result.error || "未知错误"));
             }
@@ -775,6 +853,24 @@
             showToast("删除失败，请检查网络");
           }
         };
+
+        prevPageBtn.addEventListener("click", () => {
+          if (currentPage > 1) {
+            loadRecordings(currentPage - 1, pageSize);
+          }
+        });
+
+        nextPageBtn.addEventListener("click", () => {
+          if (currentPage < totalPages) {
+            loadRecordings(currentPage + 1, pageSize);
+          }
+        });
+
+        pageSizeSelect.addEventListener("change", () => {
+          pageSize = Number(pageSizeSelect.value) || 5;
+          currentPage = 1;
+          loadRecordings(currentPage, pageSize);
+        });
 
         // ---- Event Listeners ----
         // Mouse / Touch: press and hold
