@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>登录 - Demo</title>
+    <style>
+      body {
+        font-family: "Microsoft YaHei", sans-serif;
+        background: linear-gradient(135deg, #eef2ff, #f5f7ff);
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .card {
+        width: 360px;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 18px 40px rgba(20, 32, 84, 0.12);
+        padding: 36px;
+      }
+      .card h1 {
+        margin-bottom: 24px;
+        font-size: 26px;
+        color: #1f2d52;
+      }
+      .field {
+        margin-bottom: 18px;
+      }
+      .field label {
+        display: block;
+        color: #5f6f8f;
+        margin-bottom: 8px;
+        font-size: 14px;
+      }
+      .field input {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid #d8dee9;
+        border-radius: 10px;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.2s ease;
+      }
+      .field input:focus {
+        border-color: #4f7df0;
+      }
+      .btn {
+        width: 100%;
+        background: #4f7df0;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 12px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-top: 12px;
+      }
+      .error {
+        color: #c53030;
+        margin-top: 16px;
+        text-align: center;
+        font-size: 14px;
+      }
+      .footer-link {
+        margin-top: 16px;
+        text-align: center;
+        font-size: 13px;
+        color: #7a8aac;
+      }
+      .footer-link a {
+        color: #4f7df0;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>系统登录</h1>
+      <form th:action="@{/login}" method="post">
+        <div class="field">
+          <label for="username">用户名</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            placeholder="请输入用户名"
+            required
+          />
+        </div>
+        <div class="field">
+          <label for="password">密码</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="请输入密码"
+            required
+          />
+        </div>
+        <button class="btn" type="submit">登录</button>
+      </form>
+      <div class="error" th:if="${error}">
+        用户名或密码错误，或者用户未启用。
+      </div>
+      <div class="footer-link">
+        <a href="/menu">返回菜单</a>
+      </div>
+    </div>
+  </body>
+</html>

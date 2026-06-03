@@ -8,11 +8,14 @@ public class User {
     private Long id;
     private String username;
     private String password;
+    private String fullName;
+    private String email;
     private Boolean enabled;
-    
-    // 如果需要，可以添加构造方法
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
     public User() {}
-    
+
     public User(String username, String password, Boolean enabled) {
         this.username = username;
         this.password = password;

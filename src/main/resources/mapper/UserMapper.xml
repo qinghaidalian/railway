@@ -17,6 +17,40 @@
     
     <!-- 1. 查询所有用户 - 使用结果映射 -->
     <select id="findAll" resultMap="userResultMap">
-        SELECT * FROM users
+        SELECT id, username, password, full_name, email, enabled, created_at, updated_at
+        FROM users
+        ORDER BY id
     </select>
+
+    <select id="findById" parameterType="long" resultMap="userResultMap">
+        SELECT id, username, password, full_name, email, enabled, created_at, updated_at
+        FROM users
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByUsername" parameterType="string" resultMap="userResultMap">
+        SELECT id, username, password, full_name, email, enabled, created_at, updated_at
+        FROM users
+        WHERE username = #{username}
+    </select>
+
+    <insert id="insert" parameterType="com.example.demo.entity.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO users (username, password, full_name, email, enabled, created_at, updated_at)
+        VALUES (#{username}, #{password}, #{fullName}, #{email}, #{enabled}, COALESCE(#{createdAt}, NOW()), COALESCE(#{updatedAt}, NOW()))
+    </insert>
+
+    <update id="update" parameterType="com.example.demo.entity.User">
+        UPDATE users
+        SET username = #{username},
+            password = #{password},
+            full_name = #{fullName},
+            email = #{email},
+            enabled = #{enabled},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM users WHERE id = #{id}
+    </delete>
 </mapper>

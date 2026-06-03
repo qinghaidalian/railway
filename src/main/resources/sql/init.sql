@@ -18,6 +18,21 @@ CREATE TABLE IF NOT EXISTS demo_items (
     updated_at      TIMESTAMP       NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS users (
+    id              BIGSERIAL       PRIMARY KEY,
+    username        VARCHAR(100)    NOT NULL UNIQUE,
+    password        VARCHAR(255)    NOT NULL,
+    full_name       VARCHAR(150),
+    email           VARCHAR(200),
+    enabled         BOOLEAN         NOT NULL DEFAULT true,
+    created_at      TIMESTAMP       NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMP       NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO users (username, password, full_name, email, enabled)
+VALUES ('admin', 'admin123', '系统管理员', 'admin@example.com', true)
+ON CONFLICT (username) DO NOTHING;
+
 -- 2. 插入 Demo 数据
 INSERT INTO demo_items
     (order_no, customer_name, product_name, quantity, unit_price, total_amount, order_date, status, remarks)

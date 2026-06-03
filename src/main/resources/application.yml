@@ -1,11 +1,6 @@
 spring:
   application:
     name: demo
-  # datasource:
-  #   url: jdbc:mysql://localhost:3306/qinghai?useSSL=false&serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8&allowPublicKeyRetrieval=true
-  #   username: root
-  #   password: ""
-  #   driver-class-name: com.mysql.cj.jdbc.Driver
   datasource:
     url: jdbc:postgresql://dpg-d8aop2gjs32c739cr3bg-a.oregon-postgres.render.com:5432/chen_ueeg?sslmode=require
     username: chen_ueeg_user
@@ -15,6 +10,10 @@ spring:
       connection-init-sql: SET timezone = 'Asia/Shanghai'
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:sql/init.sql
 
 server:
   port: ${PORT:8080}

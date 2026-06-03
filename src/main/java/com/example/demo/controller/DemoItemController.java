@@ -16,14 +16,19 @@ public class DemoItemController {
     private DemoItemService demoItemService;
 
     @GetMapping("/")
-    public String index(Model model) {
+    public String root() {
+        return "redirect:/login";
+    }
+
+    @GetMapping("/hello")
+    public String hello(Model model) {
         List<DemoItem> items = demoItemService.getAllItems();
         model.addAttribute("items", items);
         return "index";
     }
 
-    @GetMapping("/hello")
-    public String hello(Model model) {
+    @GetMapping("/items")
+    public String items(Model model) {
         List<DemoItem> items = demoItemService.getAllItems();
         model.addAttribute("items", items);
         return "index";
