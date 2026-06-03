@@ -152,6 +152,34 @@
         font-size: 16px;
       }
 
+      /* ---- Pagination ---- */
+      .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        margin-top: 16px;
+        padding: 14px 0;
+      }
+      .pagination button {
+        padding: 10px 16px;
+        border: 1px solid #d9d9d9;
+        border-radius: 8px;
+        background: white;
+        color: #333;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .pagination button:hover {
+        border-color: #2d8cf0;
+        color: #2d8cf0;
+      }
+      .pagination button:disabled {
+        color: #999;
+        border-color: #eee;
+        cursor: not-allowed;
+      }
+
       /* ---- Footer ---- */
       .footer {
         text-align: center;
@@ -168,19 +196,17 @@
     </div>
 
     <div class="toolbar">
-      <div class="record-count">
-        共 <span th:text="${#lists.size(items)}">0</span> 件记录
-      </div>
+      <div class="record-count">共 <span id="totalCount">0</span> 件记录</div>
       <div class="actions">
         <button class="btn-primary" onclick="window.location.href = '/menu'">
           返回菜单
         </button>
-        <button class="btn-outline" onclick="location.reload()">🔄 刷新</button>
+        <button class="btn-outline" onclick="reloadPage()">🔄 刷新</button>
       </div>
     </div>
 
     <div class="table-wrapper">
-      <table th:if="${items != null and !items.isEmpty()}">
+      <table>
         <thead>
           <tr>
             <th>No.</th>
@@ -195,54 +221,137 @@
             <th>备注</th>
           </tr>
         </thead>
-        <tbody>
-          <tr th:each="item, stat : ${items}">
-            <td th:text="${stat.count}"></td>
-            <td th:text="${item.orderNo}"></td>
-            <td th:text="${item.customerName}"></td>
-            <td th:text="${item.productName}"></td>
-            <td th:text="${item.quantity}"></td>
-            <td
-              class="amount"
-              th:text="${#numbers.formatDecimal(item.unitPrice, 1, 2)}"
-            ></td>
-            <td
-              class="amount"
-              th:text="${#numbers.formatDecimal(item.totalAmount, 1, 2)}"
-            ></td>
-            <td th:text="${item.orderDate}"></td>
-            <td>
-              <span
-                class="badge badge-done"
-                th:if="${item.status == '已完成'}"
-                th:text="${item.status}"
-              ></span>
-              <span
-                class="badge badge-progress"
-                th:if="${item.status == '处理中'}"
-                th:text="${item.status}"
-              ></span>
-              <span
-                class="badge badge-pending"
-                th:if="${item.status == '待处理'}"
-                th:text="${item.status}"
-              ></span>
-            </td>
-            <td th:text="${item.remarks != null ? item.remarks : '-'}"></td>
+        <tbody id="itemRows">
+          <tr>
+            <td colspan="10" class="empty-state">正在加载中...</td>
           </tr>
         </tbody>
       </table>
+    </div>
 
-      <div class="empty-state" th:if="${items == null or items.isEmpty()}">
-        暂无数据
-      </div>
+    <div class="pagination">
+      <label for="pageSizeSelect" style="display:flex;align-items:center;gap:8px;font-size:14px;color:#333;">
+        每页显示
+        <select id="pageSizeSelect" style="padding:8px 10px;border-radius:8px;border:1px solid #d9d9d9;font-size:14px;">
+          <option value="5">5</option>
+          <option value="15">15</option>
+          <option value="30">30</option>
+          <option value="60">60</option>
+        </select>
+      </label>
+      <button id="prevPage" class="btn-outline">上一页</button>
+      <span
+        >第 <strong id="currentPage">1</strong> 页 / 共
+        <strong id="totalPages">1</strong> 页</span
+      >
+      <button id="nextPage" class="btn-outline">下一页</button>
     </div>
 
     <div class="footer">Demo Application &copy; 2026</div>
 
     <script>
+      let pageSize = 15;
+      let currentPage = 1;
+      let totalPages = 1;
+      let items = [];
+
+      function formatCurrency(value) {
+        return Number(value || 0).toFixed(2);
+      }
+
+      function renderItems(items) {
+        const rows = document.getElementById("itemRows");
+        rows.innerHTML = "";
+        if (!items || items.length === 0) {
+          rows.innerHTML =
+            '<tr><td colspan="10" class="empty-state">暂无数据</td></tr>';
+          return;
+        }
+
+        items.forEach((item, index) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${(currentPage - 1) * pageSize + index + 1}</td>
+            <td>${item.orderNo || ""}</td>
+            <td>${item.customerName || ""}</td>
+            <td>${item.productName || ""}</td>
+            <td>${item.quantity || 0}</td>
+            <td class="amount">${formatCurrency(item.unitPrice)}</td>
+            <td class="amount">${formatCurrency(item.totalAmount)}</td>
+            <td>${item.orderDate || ""}</td>
+            <td>${renderStatus(item.status)}</td>
+            <td>${item.remarks || "-"}</td>
+          `;
+          rows.appendChild(row);
+        });
+      }
+
+      function renderStatus(status) {
+        const text = status || "-";
+        const lower = String(text).trim();
+        if (lower === "已完成") {
+          return `<span class="badge badge-done">${text}</span>`;
+        }
+        if (lower === "处理中") {
+          return `<span class="badge badge-progress">${text}</span>`;
+        }
+        if (lower === "待处理") {
+          return `<span class="badge badge-pending">${text}</span>`;
+        }
+        return `<span class="badge badge-pending">${text}</span>`;
+      }
+
+      function updatePager(total, page, pages) {
+        document.getElementById("totalCount").textContent = total;
+        document.getElementById("currentPage").textContent = page;
+        document.getElementById("totalPages").textContent = pages;
+        document.getElementById("prevPage").disabled = page <= 1;
+        document.getElementById("nextPage").disabled = page >= pages;
+      }
+
+      function loadPage(page) {
+        currentPage = Math.max(page, 1);
+        fetch(`/api/items?page=${currentPage}&size=${pageSize}`)
+          .then((res) => res.json())
+          .then((result) => {
+            const total = result.total || 0;
+            items = result.items || [];
+            totalPages = Math.max(Math.ceil(total / pageSize), 1);
+            renderItems(items);
+            updatePager(total, currentPage, totalPages);
+          })
+          .catch(() => {
+            document.getElementById("itemRows").innerHTML =
+              '<tr><td colspan="10" class="empty-state">数据加载失败，请稍后重试</td></tr>';
+          });
+      }
+
+      function reloadPage() {
+        loadPage(currentPage);
+      }
+
+      document.getElementById("pageSizeSelect").addEventListener("change", (event) => {
+        pageSize = Number(event.target.value) || 15;
+        currentPage = 1;
+        loadPage(currentPage);
+      });
+
+      document.getElementById("prevPage").addEventListener("click", () => {
+        if (currentPage > 1) {
+          loadPage(currentPage - 1);
+        }
+      });
+
+      document.getElementById("nextPage").addEventListener("click", () => {
+        if (currentPage < totalPages) {
+          loadPage(currentPage + 1);
+        }
+      });
+
       document.getElementById("currentTime").innerText =
         new Date().toLocaleString();
+      document.getElementById("pageSizeSelect").value = pageSize;
+      loadPage(currentPage);
     </script>
   </body>
 </html>

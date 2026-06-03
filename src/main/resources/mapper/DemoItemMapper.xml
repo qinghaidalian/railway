@@ -27,4 +27,17 @@
          ORDER BY id
     </select>
 
+    <select id="findPage" resultMap="demoItemResultMap" parameterType="map">
+        SELECT id, order_no, customer_name, product_name, quantity,
+               unit_price, total_amount, order_date, status, remarks,
+               created_at, updated_at
+          FROM demo_items
+         ORDER BY id
+         LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(1) FROM demo_items
+    </select>
+
 </mapper>
