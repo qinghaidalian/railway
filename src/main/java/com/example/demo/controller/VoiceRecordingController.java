@@ -12,6 +12,8 @@ import com.example.demo.dto.PageResult;
 import com.example.demo.entity.VoiceRecording;
 import com.example.demo.service.VoiceRecordingService;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -75,15 +77,53 @@ public class VoiceRecordingController {
 
     @GetMapping("/api/voice/audio/{id}")
     @ResponseBody
-    public ResponseEntity<byte[]> getAudio(@PathVariable Long id) {
+    public ResponseEntity<byte[]> getAudio(@PathVariable Long id, HttpServletRequest request) {
         VoiceRecording recording = voiceRecordingService.getRecordingAudio(id);
         if (recording == null || recording.getAudioData() == null) {
             return ResponseEntity.notFound().build();
         }
+
+        byte[] audioData = recording.getAudioData();
+        long fileLength = audioData.length;
+
+        // Handle HTTP Range requests — required for HTML5 audio seeking
+        String rangeHeader = request.getHeader("Range");
+        if (rangeHeader != null && rangeHeader.startsWith("bytes=")) {
+            String[] parts = rangeHeader.substring(6).split("-");
+            long start = Long.parseLong(parts[0]);
+            long end = (parts.length > 1 && !parts[1].isEmpty())
+                    ? Long.parseLong(parts[1])
+                    : fileLength - 1;
+
+            if (start >= fileLength) {
+                return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+                        .header("Content-Range", "bytes */" + fileLength)
+                        .build();
+            }
+
+            end = Math.min(end, fileLength - 1);
+            long contentLength = end - start + 1;
+
+            byte[] partialData = new byte[(int) contentLength];
+            System.arraycopy(audioData, (int) start, partialData, 0, (int) contentLength);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType("audio/webm"));
+            headers.setContentLength(contentLength);
+            headers.set("Content-Range", "bytes " + start + "-" + end + "/" + fileLength);
+            headers.set("Accept-Ranges", "bytes");
+            headers.set("Cache-Control", "no-cache");
+
+            return new ResponseEntity<>(partialData, headers, HttpStatus.PARTIAL_CONTENT);
+        }
+
+        // Full response (no Range header)
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("audio/webm"));
-        headers.setContentLength(recording.getAudioData().length);
-        return new ResponseEntity<>(recording.getAudioData(), headers, HttpStatus.OK);
+        headers.setContentLength(fileLength);
+        headers.set("Accept-Ranges", "bytes");
+        headers.set("Cache-Control", "no-cache");
+        return new ResponseEntity<>(audioData, headers, HttpStatus.OK);
     }
 
     @DeleteMapping("/api/voice/{id}")

@@ -302,9 +302,45 @@
         font-weight: 500;
         margin-bottom: 4px;
       }
-      .recording-duration {
+      .recording-duration,
+      .recording-progress {
         font-size: 12px;
         color: #999;
+      }
+      .recording-progress {
+        margin-top: 2px;
+      }
+      .recording-progress-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .seek-bar {
+        width: 100%;
+        height: 8px;
+        border-radius: 999px;
+        background: #f0f0f0;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+      }
+      .seek-fill {
+        height: 100%;
+        width: 0%;
+        background: #07c160;
+        border-radius: 999px;
+        transition: width 0.1s linear;
+      }
+      .seek-thumb {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #07c160;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
       }
 
       .recording-wave {
@@ -542,6 +578,12 @@
         let timerInterval = null;
         let isRecording = false;
         let currentPlayingBtn = null;
+        let currentAudioId = null;
+        let progressInterval = null;
+        let isSeeking = false;
+        let seekTargetBar = null;
+        let hasDragged = false;
+        let lastSeekPageX = 0;
         let currentPage = 1;
         let pageSize = 5;
         let totalPages = 1;
@@ -755,7 +797,14 @@
                                 </div>
                                 <div class="recording-info">
                                     <div class="recording-date">${dateStr}</div>
-                                    <div class="recording-duration">⏱ ${durStr}</div>
+                                    <div class="recording-duration">总时长 ⏱ ${durStr}</div>
+                                    <div class="recording-progress-wrapper">
+                                      <div class="recording-progress" id="progress-${item.id}">播放 00:00 / ${durStr}</div>
+                                      <div class="seek-bar" id="seek-${item.id}" data-id="${item.id}" data-duration="${dur}" title="点击或拖动调整播放位置">
+                                        <div class="seek-fill" id="fill-${item.id}"></div>
+                                        <div class="seek-thumb" id="thumb-${item.id}"></div>
+                                      </div>
+                                    </div>
                                 </div>
                                 <button class="delete-btn" data-id="${item.id}"
                                         onclick="deleteRecording(event, ${item.id})" title="删除">
@@ -767,6 +816,7 @@
                         `;
               })
               .join("");
+            attachSeekControls();
           } catch (err) {
             console.error("加载列表失败:", err);
           }
@@ -780,14 +830,26 @@
             resetPlayBtn(currentPlayingBtn);
           }
 
+          const progressEl = document.getElementById(`progress-${id}`);
+          const idString = String(id);
+
           if (btn.classList.contains("playing")) {
             // Pause
             audioPlayer.pause();
             resetPlayBtn(btn);
+            updateSeekUI(
+              idString,
+              audioPlayer.currentTime,
+              audioPlayer.duration || 0,
+            );
             currentPlayingBtn = null;
           } else {
-            // Play
-            audioPlayer.src = "/api/voice/audio/" + id;
+            // Play or resume
+            if (currentAudioId !== idString) {
+              audioPlayer.pause();
+              audioPlayer.src = "/api/voice/audio/" + idString;
+              currentAudioId = idString;
+            }
             audioPlayer.play().catch((err) => {
               console.error("播放失败:", err);
               showToast("播放失败");
@@ -810,28 +872,317 @@
               }, 120);
               btn._dotInterval = dotInterval;
             }
+
+            startProgressInterval(progressEl);
           }
 
           audioPlayer.onended = () => {
             resetPlayBtn(btn);
+            updateSeekUI(idString, 0, audioPlayer.duration || 0);
             currentPlayingBtn = null;
           };
         };
 
+        function startProgressInterval(progressEl) {
+          if (progressInterval) {
+            clearInterval(progressInterval);
+          }
+          progressInterval = setInterval(() => {
+            if (
+              currentAudioId &&
+              !audioPlayer.paused &&
+              audioPlayer.duration > 0 &&
+              !isSeeking
+            ) {
+              updateSeekUI(
+                currentAudioId,
+                audioPlayer.currentTime,
+                audioPlayer.duration,
+              );
+            }
+          }, 200);
+        }
+
+        function stopProgressInterval() {
+          if (progressInterval) {
+            clearInterval(progressInterval);
+            progressInterval = null;
+          }
+        }
+
+        function updateSeekUI(id, currentTime, duration) {
+          const progressEl = document.getElementById(`progress-${id}`);
+          const fillEl = document.getElementById(`fill-${id}`);
+          const thumbEl = document.getElementById(`thumb-${id}`);
+          if (progressEl) {
+            const displayTime = isNaN(currentTime)
+              ? 0
+              : Math.floor(currentTime);
+            progressEl.textContent = `播放 ${formatTime(displayTime)} / ${formatTime(Math.max(0, Math.floor(duration || 0)))}`;
+          }
+          if (fillEl && thumbEl && duration > 0) {
+            const ratio = Math.min(1, Math.max(0, currentTime / duration));
+            fillEl.style.width = `${ratio * 100}%`;
+            thumbEl.style.left = `${ratio * 100}%`;
+          }
+        }
+
+        function loadAudioAtPosition(id, targetTime, shouldPlay) {
+          const idString = String(id);
+          const isNewSource = currentAudioId !== idString;
+          const safeTarget = Math.max(0, targetTime);
+
+          // Always store the latest target so any pending handler can pick it up
+          audioPlayer._pendingTarget = safeTarget;
+          audioPlayer._pendingPlay = shouldPlay;
+
+          if (isNewSource) {
+            // Reset previous button state
+            if (currentPlayingBtn) {
+              resetPlayBtn(currentPlayingBtn);
+            }
+            // Remove any stale ready handler from a previous load
+            if (audioPlayer._readyHandler) {
+              audioPlayer.removeEventListener(
+                "canplaythrough",
+                audioPlayer._readyHandler,
+              );
+              audioPlayer._readyHandler = null;
+            }
+
+            currentAudioId = idString;
+            audioPlayer.pause();
+
+            // Use #t= fragment for reliable initial seek position.
+            // The browser will seek to this time as soon as metadata loads.
+            audioPlayer.src =
+              "/api/voice/audio/" + idString + "#t=" + safeTarget;
+
+            // Fallback handler: ensures correct position and auto-plays after load
+            audioPlayer._readyHandler = () => {
+              audioPlayer.removeEventListener(
+                "canplaythrough",
+                audioPlayer._readyHandler,
+              );
+              audioPlayer._readyHandler = null;
+              const t =
+                audioPlayer._pendingTarget != null
+                  ? audioPlayer._pendingTarget
+                  : 0;
+              const p = audioPlayer._pendingPlay !== false;
+              if (
+                audioPlayer.duration > 0 &&
+                isFinite(audioPlayer.duration)
+              ) {
+                // Only adjust if browser didn't honour the #t= fragment
+                if (Math.abs(audioPlayer.currentTime - t) > 0.5) {
+                  audioPlayer.currentTime = Math.min(t, audioPlayer.duration);
+                }
+              }
+              if (p) {
+                audioPlayer.play().catch(() => {});
+              }
+            };
+            audioPlayer.addEventListener(
+              "canplaythrough",
+              audioPlayer._readyHandler,
+            );
+            audioPlayer.load();
+          } else {
+            // Same source — seek immediately if enough data is buffered
+            if (
+              audioPlayer.readyState >= 2 &&
+              audioPlayer.duration > 0 &&
+              isFinite(audioPlayer.duration)
+            ) {
+              audioPlayer.currentTime = Math.min(
+                safeTarget,
+                audioPlayer.duration,
+              );
+              if (audioPlayer._pendingPlay) {
+                audioPlayer.play().catch(() => {});
+              }
+            }
+            // If not ready yet, the existing canplaythrough handler will fire
+            // and use the latest _pendingTarget automatically
+          }
+        }
+
+        function seekAndPlay(id, targetTime, playBtn) {
+          stopProgressInterval();
+          loadAudioAtPosition(id, targetTime, true);
+
+          if (playBtn) {
+            // Reset previous button if different
+            if (currentPlayingBtn && currentPlayingBtn !== playBtn) {
+              resetPlayBtn(currentPlayingBtn);
+            }
+            currentPlayingBtn = playBtn;
+            playBtn.classList.add("playing");
+            playBtn.querySelector(".play-icon").style.display = "none";
+            playBtn.querySelector(".pause-icon").style.display = "";
+
+            // Start wave animation
+            const item = playBtn.closest(".recording-item");
+            if (item) {
+              const dots = item.querySelectorAll(".recording-wave .dot");
+              let dotIdx = 0;
+              if (playBtn._dotInterval) clearInterval(playBtn._dotInterval);
+              const dotInterval = setInterval(() => {
+                dots.forEach((d, i) => {
+                  d.classList.toggle("active", i <= dotIdx % dots.length);
+                });
+                dotIdx++;
+              }, 120);
+              playBtn._dotInterval = dotInterval;
+            }
+          }
+
+          startProgressInterval();
+        }
+
+        let seekHandlersAttached = false;
+        function attachSeekControls() {
+          const onSeekMove = (event) => {
+            if (!isSeeking || !seekTargetBar) return;
+            hasDragged = true;
+            event.preventDefault();
+            const pageX = event.type.startsWith("touch")
+              ? event.touches[0].clientX
+              : event.clientX;
+            lastSeekPageX = pageX;
+            if (seekTargetBar._updateDragUI) {
+              seekTargetBar._updateDragUI(pageX);
+            }
+          };
+
+          const onSeekEnd = (event) => {
+            if (!isSeeking || !seekTargetBar) return;
+            // Use last known drag position if dragged, otherwise use click position
+            const pageX = event.type.startsWith("touch")
+              ? event.changedTouches && event.changedTouches[0]
+                ? event.changedTouches[0].clientX
+                : lastSeekPageX
+              : event.clientX;
+            const commitX = hasDragged ? lastSeekPageX : pageX;
+            if (seekTargetBar._commitSeek) {
+              seekTargetBar._commitSeek(commitX);
+            }
+            isSeeking = false;
+            seekTargetBar = null;
+            hasDragged = false;
+          };
+
+          if (!seekHandlersAttached) {
+            document.addEventListener("mousemove", onSeekMove);
+            document.addEventListener("touchmove", onSeekMove, {
+              passive: false,
+            });
+            document.addEventListener("mouseup", onSeekEnd);
+            document.addEventListener("touchend", onSeekEnd);
+            seekHandlersAttached = true;
+          }
+
+          recordingsList.querySelectorAll(".seek-bar").forEach((bar) => {
+            const id = bar.dataset.id;
+            const duration = Number(bar.dataset.duration) || 0;
+            const item = bar.closest(".recording-item");
+            const playBtn = item ? item.querySelector(".play-btn") : null;
+
+            // Update UI and immediately scrub/play while dragging
+            const updateDragUI = (pageX) => {
+              const rect = bar.getBoundingClientRect();
+              const ratio = Math.min(
+                1,
+                Math.max(0, (pageX - rect.left) / rect.width),
+              );
+              const targetTime = ratio * duration;
+
+              // Immediately seek and play at the dragged position
+              try {
+                // Use loadAudioAtPosition to avoid duplicating seek logic
+                loadAudioAtPosition(id, targetTime, true);
+              } catch (e) {
+                console.error("scrub play error", e);
+              }
+
+              // Update visual seek UI
+              updateSeekUI(id, targetTime, duration);
+
+              // Ensure play button shows playing state and animate dots
+              if (playBtn) {
+                if (!playBtn.classList.contains("playing")) {
+                  playBtn.classList.add("playing");
+                  const playIcon = playBtn.querySelector(".play-icon");
+                  const pauseIcon = playBtn.querySelector(".pause-icon");
+                  if (playIcon) playIcon.style.display = "none";
+                  if (pauseIcon) pauseIcon.style.display = "";
+                }
+
+                const item = playBtn.closest(".recording-item");
+                if (item && !playBtn._dotInterval) {
+                  const dots = item.querySelectorAll(".recording-wave .dot");
+                  let dotIdx = 0;
+                  const dotInterval = setInterval(() => {
+                    dots.forEach((d, i) => {
+                      d.classList.toggle("active", i <= dotIdx % dots.length);
+                    });
+                    dotIdx++;
+                  }, 120);
+                  playBtn._dotInterval = dotInterval;
+                }
+              }
+            };
+
+            // Commit: actually seek audio and play
+            const commitSeek = (pageX) => {
+              const rect = bar.getBoundingClientRect();
+              const ratio = Math.min(
+                1,
+                Math.max(0, (pageX - rect.left) / rect.width),
+              );
+              const targetTime = ratio * duration;
+              seekAndPlay(id, targetTime, playBtn);
+              updateSeekUI(id, targetTime, duration);
+            };
+
+            const onSeekStart = (event) => {
+              event.preventDefault();
+              isSeeking = true;
+              seekTargetBar = bar;
+              hasDragged = false;
+              const pageX = event.type.startsWith("touch")
+                ? event.touches[0].clientX
+                : event.clientX;
+              lastSeekPageX = pageX;
+              updateDragUI(pageX);
+            };
+
+            bar._updateDragUI = updateDragUI;
+            bar._commitSeek = commitSeek;
+
+            bar.addEventListener("mousedown", onSeekStart);
+            bar.addEventListener("touchstart", onSeekStart, { passive: false });
+          });
+        }
+
         function resetPlayBtn(btn) {
-          btn.classList.remove("playing");
-          btn.querySelector(".play-icon").style.display = "";
-          btn.querySelector(".pause-icon").style.display = "none";
-          if (btn._dotInterval) {
-            clearInterval(btn._dotInterval);
-            btn._dotInterval = null;
+          if (btn) {
+            btn.classList.remove("playing");
+            btn.querySelector(".play-icon").style.display = "";
+            btn.querySelector(".pause-icon").style.display = "none";
+            if (btn._dotInterval) {
+              clearInterval(btn._dotInterval);
+              btn._dotInterval = null;
+            }
+            const item = btn.closest(".recording-item");
+            if (item) {
+              item
+                .querySelectorAll(".recording-wave .dot")
+                .forEach((d) => d.classList.remove("active"));
+            }
           }
-          const item = btn.closest(".recording-item");
-          if (item) {
-            item
-              .querySelectorAll(".recording-wave .dot")
-              .forEach((d) => d.classList.remove("active"));
-          }
+          stopProgressInterval();
         }
 
         // ---- Delete Recording ----
