@@ -2,12 +2,23 @@ spring:
   application:
     name: demo
   datasource:
-    url: jdbc:postgresql://dpg-d8aop2gjs32c739cr3bg-a.oregon-postgres.render.com:5432/chen_ueeg?sslmode=require
-    username: chen_ueeg_user
-    password: A2j8z4cS7UWBhS238yZVDIv83OYmym8c
+    # url: jdbc:postgresql://dpg-d8aop2gjs32c739cr3bg-a.oregon-postgres.render.com:5432/chen_ueeg?sslmode=require
+    # username: chen_ueeg_user
+    # password: A2j8z4cS7UWBhS238yZVDIv83OYmym8c
+    # driver-class-name: org.postgresql.Driver
+    # hikari:
+    #   connection-init-sql: SET timezone = 'Asia/Shanghai'
+    url: jdbc:postgresql://ep-cold-sunset-ao66u692.c-2.ap-southeast-1.aws.neon.tech:5432/neondb?sslmode=require
+    username: neondb_owner
+    password: npg_MYBFAI9T4UGx
     driver-class-name: org.postgresql.Driver
     hikari:
       connection-init-sql: SET timezone = 'Asia/Shanghai'
+      maximum-pool-size: 5 # Neon 免费版只有 10 个连接
+      minimum-idle: 1
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      connection-timeout: 10000
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
   sql:
