@@ -64,6 +64,7 @@ public class VoiceRecordingController {
             item.put("id", r.getId());
             item.put("createdAt", r.getCreatedAt().toString());
             item.put("duration", r.getDuration());
+            item.put("deletable", voiceRecordingService.isDeletable(r));
             return item;
         }).toList();
 
@@ -129,11 +130,25 @@ public class VoiceRecordingController {
     @DeleteMapping("/api/voice/{id}")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> deleteRecording(@PathVariable Long id) {
-        boolean deleted = voiceRecordingService.deleteRecording(id);
+        VoiceRecording recording = voiceRecordingService.getRecordingAudio(id);
         Map<String, Object> result = new HashMap<>();
+
+        if (recording == null) {
+            result.put("success", false);
+            result.put("error", "录音不存在或已删除");
+            return ResponseEntity.ok(result);
+        }
+
+        if (!voiceRecordingService.isDeletable(recording)) {
+            result.put("success", false);
+            result.put("error", "该录音已超过24小时，无法删除");
+            return ResponseEntity.ok(result);
+        }
+
+        boolean deleted = voiceRecordingService.deleteRecording(id);
         result.put("success", deleted);
         if (!deleted) {
-            result.put("error", "录音不存在或已删除");
+            result.put("error", "删除失败");
         }
         return ResponseEntity.ok(result);
     }

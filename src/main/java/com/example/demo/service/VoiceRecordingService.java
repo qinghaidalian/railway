@@ -44,6 +44,24 @@ public class VoiceRecordingService {
     }
 
     public boolean deleteRecording(Long id) {
+        VoiceRecording recording = voiceRecordingMapper.findById(id);
+        if (recording == null) {
+            return false;
+        }
+        // 超过24小时的记录不允许删除
+        if (recording.getCreatedAt().isBefore(java.time.LocalDateTime.now().minusHours(24))) {
+            return false;
+        }
         return voiceRecordingMapper.deleteById(id) > 0;
+    }
+
+    /**
+     * 判断录音是否可删除（创建时间未超过24小时）
+     */
+    public boolean isDeletable(VoiceRecording recording) {
+        if (recording == null || recording.getCreatedAt() == null) {
+            return false;
+        }
+        return !recording.getCreatedAt().isBefore(java.time.LocalDateTime.now().minusHours(24));
     }
 }
