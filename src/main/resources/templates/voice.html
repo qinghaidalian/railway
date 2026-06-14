@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, user-scalable=no"
     />
-    <title>语音录制</title>
+    <title>语音日志记录</title>
     <style>
       * {
         margin: 0;
@@ -970,10 +970,7 @@
                   ? audioPlayer._pendingTarget
                   : 0;
               const p = audioPlayer._pendingPlay !== false;
-              if (
-                audioPlayer.duration > 0 &&
-                isFinite(audioPlayer.duration)
-              ) {
+              if (audioPlayer.duration > 0 && isFinite(audioPlayer.duration)) {
                 // Only adjust if browser didn't honour the #t= fragment
                 if (Math.abs(audioPlayer.currentTime - t) > 0.5) {
                   audioPlayer.currentTime = Math.min(t, audioPlayer.duration);
