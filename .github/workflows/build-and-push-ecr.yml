@@ -1,0 +1,47 @@
+name: Build and Push to AWS ECR
+
+# 触发条件：当代码推送到 main 分支时自动执行
+on:
+  push:
+    branches: [ "main", "master" ]
+
+# 设置工作流级别的权限（OIDC 必须开启 id-token: write）
+permissions:
+  id-token: write   # 允许获取 OIDC 令牌去换 AWS 临时凭证
+  contents: read    # 允许检出仓库代码
+
+jobs:
+  build-and-push:
+    name: Build Docker Image and Push to ECR
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 检出仓库代码到 Runner
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. 配置 AWS 凭证（使用 OIDC，无需存 AK/SK）
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/GitHubActions-ECR-Role
+          aws-region: us-east-1   # 换成你的 AWS 区域
+
+      # 3. 登录 Amazon ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 4. 构建 Docker 镜像并推送到 ECR
+      - name: Build, tag, and push image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: railway-app   # 换成你的 ECR 仓库名
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          
+          # 可选：同时打一个 latest 标签
+          docker tag $EPR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
