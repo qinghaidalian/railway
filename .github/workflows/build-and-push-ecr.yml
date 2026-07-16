@@ -25,7 +25,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::448877125353:role/GitHubActions-ECR-Role
-          aws-region: us-east-1   # 换成你的 AWS 区域
+          aws-region: ap-southeast-2   # 换成你的 AWS 区域
 
       # 3. 登录 Amazon ECR
       - name: Login to Amazon ECR
@@ -36,12 +36,12 @@ jobs:
       - name: Build, tag, and push image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: railway-app   # 换成你的 ECR 仓库名
+          ECR_REPOSITORY: xiaohai   # 换成你的 ECR 仓库名
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           
           # 可选：同时打一个 latest 标签
-          docker tag $EPR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
