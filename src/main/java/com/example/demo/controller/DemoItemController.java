@@ -19,7 +19,7 @@ public class DemoItemController {
     @Autowired
     private DemoItemService demoItemService;
 
-    @GetMapping("/aa")
+    @GetMapping("/aaa")
     public String root() {
         return "redirect:/login";
     }
